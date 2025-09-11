@@ -1,0 +1,30 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model RewardEvent {
+  id              Int      @id @default(autoincrement())
+  userId          String
+  stockSymbol     String
+  quantity        Decimal  @db.Numeric(18, 6)
+  rewardTimestamp DateTime @default(now())
+  Ledger          Ledger[]
+}
+
+model Ledger {
+  id           Int      @id @default(autoincrement())
+  rewardId     Int
+  stockSymbol  String
+  quantity     Decimal  @db.Numeric(18, 6)
+  inrOutflow   Decimal  @db.Numeric(18, 4)
+  brokerageFee Decimal  @db.Numeric(18, 4)
+  sttFee       Decimal  @db.Numeric(18, 4)
+  gstFee       Decimal  @db.Numeric(18, 4)
+
+  RewardEvent RewardEvent @relation(fields: [rewardId], references: [id])
+}
