@@ -2,16 +2,20 @@
 const prisma = new PrismaClient();
 
 async function main() {
-  // drop existing for clean seed (optional in dev)
-  await prisma.ledger.deleteMany().catch(()=>{});
-  await prisma.rewardEvent.deleteMany().catch(()=>{});
+  console.log("🔄 Clearing existing data...");
+  await prisma.ledger.deleteMany().catch(() => {});
+  await prisma.rewardEvent.deleteMany().catch(() => {});
 
+  console.log("🌱 Inserting dummy reward events...");
+
+  // User 1 rewards
   await prisma.rewardEvent.create({
     data: {
+      externalId: "evt-001",
       userId: "user_1",
       stockSymbol: "RELIANCE",
       quantity: "2.500000",
-      rewardTimestamp: new Date(),
+      rewardTimestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
       Ledger: {
         create: {
           stockSymbol: "RELIANCE",
@@ -27,10 +31,11 @@ async function main() {
 
   await prisma.rewardEvent.create({
     data: {
+      externalId: "evt-002",
       userId: "user_1",
       stockSymbol: "TCS",
       quantity: "1.000000",
-      rewardTimestamp: new Date(),
+      rewardTimestamp: new Date(), // today
       Ledger: {
         create: {
           stockSymbol: "TCS",
@@ -44,12 +49,33 @@ async function main() {
     }
   });
 
-  console.log("✅ Seed completed");
+  // User 2 rewards
+  await prisma.rewardEvent.create({
+    data: {
+      externalId: "evt-003",
+      userId: "user_2",
+      stockSymbol: "INFY",
+      quantity: "3.000000",
+      rewardTimestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // yesterday
+      Ledger: {
+        create: {
+          stockSymbol: "INFY",
+          quantity: "3.000000",
+          inrOutflow: "4200.0000",
+          brokerageFee: "12.0000",
+          sttFee: "6.0000",
+          gstFee: "2.1600"
+        }
+      }
+    }
+  });
+
+  console.log("✅ Dummy data inserted successfully!");
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error("❌ Seeding failed:", e);
     process.exit(1);
   })
   .finally(async () => {
