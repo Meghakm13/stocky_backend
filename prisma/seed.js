@@ -2,75 +2,57 @@
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🔄 Clearing existing data...");
-  await prisma.ledger.deleteMany().catch(() => {});
-  await prisma.rewardEvent.deleteMany().catch(() => {});
+  console.log("🔄 Clearing old data...");
+  await prisma.ledger.deleteMany();
+  await prisma.rewardEvent.deleteMany();
 
-  console.log("🌱 Inserting dummy reward events...");
+  console.log("🌱 Inserting 10 reward events...");
 
-  // User 1 rewards
-  await prisma.rewardEvent.create({
-    data: {
-      externalId: "evt-001",
-      userId: "user_1",
-      stockSymbol: "RELIANCE",
-      quantity: "2.500000",
-      rewardTimestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-      Ledger: {
-        create: {
-          stockSymbol: "RELIANCE",
-          quantity: "2.500000",
-          inrOutflow: "2500.0000",
-          brokerageFee: "10.0000",
-          sttFee: "5.0000",
-          gstFee: "1.8000"
+  // Helper to add days offset (negative = past days)
+  const daysAgo = (n) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+
+  const rewards = [
+    // user_1 (mix of today, yesterday, 3 days ago)
+    { userId: "user_1", stockSymbol: "RELIANCE", quantity: "2.500000", date: daysAgo(0), inr: "2500.0000" },
+    { userId: "user_1", stockSymbol: "TCS",      quantity: "1.500000", date: daysAgo(0), inr: "4500.0000" },
+    { userId: "user_1", stockSymbol: "INFY",     quantity: "3.000000", date: daysAgo(1), inr: "4200.0000" },
+    { userId: "user_1", stockSymbol: "HDFCBANK", quantity: "5.500000", date: daysAgo(3), inr: "7700.0000" },
+
+    // user_2 (different mix)
+    { userId: "user_2", stockSymbol: "RELIANCE", quantity: "1.000000", date: daysAgo(0), inr: "1000.0000" },
+    { userId: "user_2", stockSymbol: "TCS",      quantity: "2.000000", date: daysAgo(2), inr: "6000.0000" },
+    { userId: "user_2", stockSymbol: "WIPRO",    quantity: "4.000000", date: daysAgo(0), inr: "2800.0000" },
+
+    // user_3 (just yesterday + older)
+    { userId: "user_3", stockSymbol: "ITC",      quantity: "10.000000", date: daysAgo(1), inr: "3200.0000" },
+    { userId: "user_3", stockSymbol: "SBIN",     quantity: "8.000000", date: daysAgo(5), inr: "5200.0000" },
+    { userId: "user_3", stockSymbol: "HCLTECH",  quantity: "3.000000", date: daysAgo(0), inr: "3300.0000" }
+  ];
+
+  for (let i = 0; i < rewards.length; i++) {
+    const r = rewards[i];
+    await prisma.rewardEvent.create({
+      data: {
+        externalId: `evt-${i + 1}`,
+        userId: r.userId,
+        stockSymbol: r.stockSymbol,
+        quantity: r.quantity,
+        rewardTimestamp: r.date,
+        Ledger: {
+          create: {
+            stockSymbol: r.stockSymbol,
+            quantity: r.quantity,
+            inrOutflow: r.inr,
+            brokerageFee: (parseFloat(r.inr) * 0.001).toFixed(4),
+            sttFee: (parseFloat(r.inr) * 0.0005).toFixed(4),
+            gstFee: ((parseFloat(r.inr) * 0.001) * 0.18).toFixed(4)
+          }
         }
       }
-    }
-  });
+    });
+  }
 
-  await prisma.rewardEvent.create({
-    data: {
-      externalId: "evt-002",
-      userId: "user_1",
-      stockSymbol: "TCS",
-      quantity: "1.000000",
-      rewardTimestamp: new Date(), // today
-      Ledger: {
-        create: {
-          stockSymbol: "TCS",
-          quantity: "1.000000",
-          inrOutflow: "3500.0000",
-          brokerageFee: "8.0000",
-          sttFee: "4.0000",
-          gstFee: "1.4400"
-        }
-      }
-    }
-  });
-
-  // User 2 rewards
-  await prisma.rewardEvent.create({
-    data: {
-      externalId: "evt-003",
-      userId: "user_2",
-      stockSymbol: "INFY",
-      quantity: "3.000000",
-      rewardTimestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // yesterday
-      Ledger: {
-        create: {
-          stockSymbol: "INFY",
-          quantity: "3.000000",
-          inrOutflow: "4200.0000",
-          brokerageFee: "12.0000",
-          sttFee: "6.0000",
-          gstFee: "2.1600"
-        }
-      }
-    }
-  });
-
-  console.log("✅ Dummy data inserted successfully!");
+  console.log("✅ Seeded 10 rows successfully!");
 }
 
 main()
